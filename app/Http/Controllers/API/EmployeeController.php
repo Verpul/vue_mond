@@ -4,6 +4,8 @@ namespace App\Http\Controllers\API;
 
 use App\Employee;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Validation\Rule;
 
 class EmployeeController extends Controller
 {
@@ -14,7 +16,7 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        return Employee::paginate(15);
+        return Employee::all();
     }
 
     /**
@@ -25,7 +27,29 @@ class EmployeeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'first_name' => 'required|string|min:2|max:100',
+            'middle_name' => 'required|string|min:2|max:100',
+            'last_name' => ['required','string','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('first_name', $request->first_name)
+                                ->where('middle_name', $request->middle_name);
+                            })],
+            'position' => 'required|string|max:100',
+            'work_phone' => 'string|nullable',
+            'mobile_phone' => 'string|nullable',
+            'email' => 'string|email|nullable'
+        ]);
+
+        Employee::create([
+            'first_name' => $request['first_name'],
+            'middle_name' => $request['middle_name'],
+            'last_name' => $request['last_name'],
+            'position' => $request['position'],
+            'work_phone' => $request['work_phone'],
+            'mobile_phone' => $request['mobile_phone'],
+            'email' => $request['email']
+        ]);
     }
 
     /**
@@ -46,9 +70,25 @@ class EmployeeController extends Controller
      * @param  \App\Employee  $employee
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Employee $employee)
+    public function update(Request $request, $id)
     {
-        //
+        $employee = Employee::findOrFail($id);
+
+        $this->validate($request, [
+            'first_name' => 'required|string|min:2|max:100',
+            'middle_name' => 'required|string|min:2|max:100',
+            'last_name' => ['required','string','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('first_name', $request->first_name)
+                                ->where('middle_name', $request->middle_name);
+                            })->ignore($id)],
+            'position' => 'required|string|max:100',
+            'work_phone' => 'string|nullable',
+            'mobile_phone' => 'string|nullable',
+            'email' => 'string|email|nullable'
+        ]);
+
+        $employee->update($request->all());
     }
 
     /**
@@ -57,8 +97,10 @@ class EmployeeController extends Controller
      * @param  \App\Employee  $employee
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Employee $employee)
+    public function destroy($id)
     {
-        //
+        $employee = Employee::findOrFail($id);
+
+        $employee->delete();
     }
 }
