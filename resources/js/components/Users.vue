@@ -29,25 +29,12 @@
               <table class="table table-bordered table-striped">
                 <thead>
                 <tr>
-                  <th @click="sort" class="text-nowrap cursor-pointer " name="ID">
-                      <i class="fas fa-sort pr-1"></i>
-                      ID
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    ФИО
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    Должность
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    E-mail
-                  </th>
-                  <th>Рабочий телефон</th>
-                  <th>Мобильный телефон</th>
-                  <th>Изменить</th>
+                  <th v-for="column in columns" :key="column.name" @click="sort(column.name)"
+                    :class="column.orderable ? 'cursor-pointer': ''" class="text-nowrap">
+                    <i v-if="column.orderable" class="fas fa-sort pr-1"></i>
+                    {{ column.label }}
+                    <span :class="column.orderable ? 'sort' : ''"></span>
+                  </th>  
                 </tr>
                 </thead>
                 <tbody>
@@ -159,31 +146,45 @@ export default {
       tableProps: {
         limit: 10,
         search: '',
+        sortColumn: 'id',
+        sortOrder: 'asc',
+
       },
       columns: [
         {
           label: 'ID',
-          name: 'ID'
+          name: 'id',
+          orderable: true
         },
         {
           label: 'ФИО',
-          name: 'last_name'
+          name: 'last_name',
+          orderable: true
         },
         {
           label: 'Должность',
-          name: 'position'
+          name: 'position',
+          orderable: true
         },
         {
           label: 'E-mail',
-          name: 'email'
+          name: 'email',
+          orderable: true
         },
         {
           label: 'Рабочий телефон',
-          name: 'work_phone'
+          name: 'work_phone',
+          orderable: false
         },
         {
           label: 'Мобильный телефон',
-          name: 'mobile_phone'
+          name: 'mobile_phone',
+          orderable: false
+        },
+        {
+          label: 'Изменить',
+          name: 'change',
+          orderable: false
         },
       ],
       form: new Form({
@@ -311,8 +312,18 @@ export default {
         this.setViewProps();
       }, 1000);    
     },
-    sort(event){
-      console.log(event);
+    sort(column){  
+        if(this.tableProps.sortColumn === column){
+            if(this.tableProps.sortOrder === 'asc'){
+                this.tableProps.sortOrder = 'desc';
+            }else{
+                this.tableProps.sortOrder = 'asc';
+            }
+        }else{
+            this.tableProps.sortColumn = column;
+        }
+
+        this.setViewProps();     
     }
   },
   created(){
@@ -321,10 +332,9 @@ export default {
 }
 </script>
 <style>
-  .cursor-pointer{cursor: pointer;}
-  .sort{
-    right: 1em;
+  
+.cursor-pointer{
+    cursor: pointer;
+}
 
-    opacity: 1;
-    content: "\2193";}
 </style>

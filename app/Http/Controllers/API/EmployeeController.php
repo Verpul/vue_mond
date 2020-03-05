@@ -16,7 +16,7 @@ class EmployeeController extends Controller
      */
     public function index()
     {
-        return Employee::all();
+        return Employee::orderBy('id', 'asc')->paginate(10);
     }
 
     /**
@@ -102,5 +102,23 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
 
         $employee->delete();
+    }
+
+    public function setViewParams(){
+        $tableProps = json_decode(\Request::get('tableProps'), true);
+        $limit =  $tableProps['limit'];
+        $search = $tableProps['search'];
+        $sortColumn = $tableProps['sortColumn'];
+        $sortOrder = $tableProps['sortOrder'];
+
+        $data = Employee::orderBy($sortColumn, $sortOrder);
+        if($search){
+            $data->where('first_name', 'LIKE', "%$search%")
+            ->orWhere('last_name', 'LIKE', "%$search%")
+            ->orWhere('position', 'LIKE', "%$search%")
+            ->orWhere('email', 'LIKE', "%$search%")
+            ->orWhere('mobile_phone', 'LIKE', "%$search%");
+        }
+        return $data->paginate($limit);          
     }
 }
