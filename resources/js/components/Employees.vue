@@ -29,25 +29,12 @@
               <table class="table table-bordered table-striped">
                 <thead>
                 <tr>
-                  <th @click="sort" class="text-nowrap cursor-pointer " name="ID">
-                      <i class="fas fa-sort pr-1"></i>
-                      ID
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    ФИО
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    Должность
-                  </th>
-                  <th @click="sort" class="text-nowrap cursor-pointer">
-                    <i class="fas fa-sort pr-1"></i>
-                    E-mail
-                  </th>
-                  <th>Рабочий телефон</th>
-                  <th>Мобильный телефон</th>
-                  <th>Изменить</th>
+                  <th v-for="column in columns" :key="column.name" @click="sort(column.name)"
+                    :class="column.orderable ? 'cursor-pointer': ''" class="text-nowrap">
+                    <i v-if="column.orderable" class="fas fa-sort pr-1"></i>
+                    {{ column.label }}
+                    <span :class="column.orderable ? 'sort' : ''"></span>
+                  </th>  
                 </tr>
                 </thead>
                 <tbody>
@@ -96,19 +83,19 @@
                     <div class="form-group">
                       <input v-model="form.last_name" type="text" name="last_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('last_name') }"
-                        placeholder="Фамилия сотрудника">
+                        placeholder="Фамилия сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="last_name"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.first_name" type="text" name="first_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('first_name') }"
-                        placeholder="Имя сотрудника">
+                        placeholder="Имя сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="first_name"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.middle_name" type="text" name="middle_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('middle_name') }"
-                        placeholder="Отчество сотрудника">
+                        placeholder="Отчество сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="middle_name"></has-error>
                     </div>
                     <div class="form-group">
@@ -126,13 +113,13 @@
                     <div class="form-group">
                       <input v-model="form.work_phone" type="text" name="work_phone"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('work_phone') }"
-                        placeholder="Рабочий телефон сотрудника">
+                        placeholder="Рабочий телефон сотрудника" v-mask="'99-99-99'">
                       <has-error :form="form" field="work_phone"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.mobile_phone" type="text" name="mobile_phone"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('mobile_phone') }"
-                        placeholder="Мобильный телефон сотрудника">
+                        placeholder="Мобильный телефон сотрудника" v-mask="'8-999-999-99-99'">
                       <has-error :form="form" field="mobile_phone"></has-error>
                     </div>
                   </div>
@@ -159,31 +146,45 @@ export default {
       tableProps: {
         limit: 10,
         search: '',
+        sortColumn: 'id',
+        sortOrder: 'asc',
+
       },
       columns: [
         {
           label: 'ID',
-          name: 'ID'
+          name: 'id',
+          orderable: true
         },
         {
           label: 'ФИО',
-          name: 'last_name'
+          name: 'last_name',
+          orderable: true
         },
         {
           label: 'Должность',
-          name: 'position'
+          name: 'position',
+          orderable: true
         },
         {
           label: 'E-mail',
-          name: 'email'
+          name: 'email',
+          orderable: true
         },
         {
           label: 'Рабочий телефон',
-          name: 'work_phone'
+          name: 'work_phone',
+          orderable: false
         },
         {
           label: 'Мобильный телефон',
-          name: 'mobile_phone'
+          name: 'mobile_phone',
+          orderable: false
+        },
+        {
+          label: 'Изменить',
+          name: 'change',
+          orderable: false
         },
       ],
       form: new Form({
@@ -200,9 +201,12 @@ export default {
   },
   methods: {
     loadData(){
+      let loader = this.$loading.show({});
+
       axios.get('/api/employees')
       .then((response) => {
         this.employees = response.data;
+        loader.hide();
       })
     },
     showFullName(employee){
@@ -217,7 +221,7 @@ export default {
     createEmployee(){
       this.form.post('/api/employees')
       .then(() => {
-        this.loadData();
+        this.setViewProps();
         $('#employeeModal').modal('hide');
 
         this.$swal({
@@ -297,6 +301,8 @@ export default {
       this.setViewProps();
     },
     setViewProps(){
+      let loader = this.$loading.show({});
+
       axios.get('/api/employees/params', {
         params: {
           tableProps: this.tableProps
@@ -304,6 +310,7 @@ export default {
       })
       .then((response) => {
         this.employees = response.data;
+        loader.hide();
       })
     },
     search(){
@@ -311,9 +318,34 @@ export default {
         this.setViewProps();
       }, 1000);    
     },
-    sort(event){
-      console.log(event);
-    }
+    sort(column){  
+        if(this.tableProps.sortColumn === column){
+            if(this.tableProps.sortOrder === 'asc'){
+                this.tableProps.sortOrder = 'desc';
+            }else{
+                this.tableProps.sortOrder = 'asc';
+            }
+        }else{
+            this.tableProps.sortColumn = column;
+        }
+
+        this.setViewProps();     
+    },
+    capitalize(value){
+      value = value.toString().toLowerCase();
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    },
+  },
+  watch: {
+    'form.last_name'(){
+      this.form.last_name = this.capitalize(event.target.value);
+    },
+    'form.first_name'(){
+      this.form.first_name = this.capitalize(event.target.value);
+    },
+    'form.middle_name'(){
+      this.form.middle_name = this.capitalize(event.target.value);
+    }, 
   },
   created(){
     this.loadData();
@@ -321,10 +353,9 @@ export default {
 }
 </script>
 <style>
-  .cursor-pointer{cursor: pointer;}
-  .sort{
-    right: 1em;
+  
+.cursor-pointer{
+    cursor: pointer;
+}
 
-    opacity: 1;
-    content: "\2193";}
 </style>

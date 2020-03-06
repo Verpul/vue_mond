@@ -28,9 +28,17 @@ class EmployeeController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'first_name' => 'required|string|min:2|max:100',
-            'middle_name' => 'required|string|min:2|max:100',
-            'last_name' => ['required','string','max:100', 'min:2',
+            'first_name' => ['required','alpha','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('last_name', $request->first_name)
+                                ->where('middle_name', $request->middle_name);
+                            })],
+            'middle_name' => ['required','alpha','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('last_name', $request->first_name)
+                                ->where('first_name', $request->middle_name);
+                            })],
+            'last_name' => ['required','alpha','max:100', 'min:2',
                             Rule::unique('employees')->where(function($query) use($request){
                                 return $query->where('first_name', $request->first_name)
                                 ->where('middle_name', $request->middle_name);
@@ -75,14 +83,22 @@ class EmployeeController extends Controller
         $employee = Employee::findOrFail($id);
 
         $this->validate($request, [
-            'first_name' => 'required|string|min:2|max:100',
-            'middle_name' => 'required|string|min:2|max:100',
-            'last_name' => ['required','string','max:100', 'min:2',
+            'first_name' => ['required','alpha','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('last_name', $request->first_name)
+                                ->where('middle_name', $request->middle_name);
+                            })->ignore($id)],
+            'middle_name' => ['required','alpha','max:100', 'min:2',
+                            Rule::unique('employees')->where(function($query) use($request){
+                                return $query->where('first_name', $request->first_name)
+                                ->where('last_name', $request->middle_name);
+                            })->ignore($id)],
+            'last_name' => ['required','alpha','max:100', 'min:2',
                             Rule::unique('employees')->where(function($query) use($request){
                                 return $query->where('first_name', $request->first_name)
                                 ->where('middle_name', $request->middle_name);
                             })->ignore($id)],
-            'position' => 'required|string|max:100',
+            'position' => 'required|alpha|max:100',
             'work_phone' => 'string|nullable',
             'mobile_phone' => 'string|nullable',
             'email' => 'string|email|nullable'

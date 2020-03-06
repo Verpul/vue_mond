@@ -83,19 +83,19 @@
                     <div class="form-group">
                       <input v-model="form.last_name" type="text" name="last_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('last_name') }"
-                        placeholder="Фамилия сотрудника">
+                        placeholder="Фамилия сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="last_name"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.first_name" type="text" name="first_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('first_name') }"
-                        placeholder="Имя сотрудника">
+                        placeholder="Имя сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="first_name"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.middle_name" type="text" name="middle_name"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('middle_name') }"
-                        placeholder="Отчество сотрудника">
+                        placeholder="Отчество сотрудника" v-mask="{regex: '[a-zA-Zа-яА-Я]*'}">
                       <has-error :form="form" field="middle_name"></has-error>
                     </div>
                     <div class="form-group">
@@ -113,13 +113,13 @@
                     <div class="form-group">
                       <input v-model="form.work_phone" type="text" name="work_phone"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('work_phone') }"
-                        placeholder="Рабочий телефон сотрудника">
+                        placeholder="Рабочий телефон сотрудника" v-mask="'99-99-99'">
                       <has-error :form="form" field="work_phone"></has-error>
                     </div>
                     <div class="form-group">
                       <input v-model="form.mobile_phone" type="text" name="mobile_phone"
                         class="form-control" :class="{ 'is-invalid': form.errors.has('mobile_phone') }"
-                        placeholder="Мобильный телефон сотрудника">
+                        placeholder="Мобильный телефон сотрудника" v-mask="'8-999-999-99-99'">
                       <has-error :form="form" field="mobile_phone"></has-error>
                     </div>
                   </div>
@@ -201,10 +201,13 @@ export default {
   },
   methods: {
     loadData(){
+      let loader = this.$loading.show({});
+      
       axios.get('/api/employees')
       .then((response) => {
         this.employees = response.data;
-      })
+        loader.hide();
+      });
     },
     showFullName(employee){
       return employee.last_name+' '+employee.first_name+' '+employee.middle_name;
@@ -218,7 +221,7 @@ export default {
     createEmployee(){
       this.form.post('/api/employees')
       .then(() => {
-        this.loadData();
+        this.setViewProps();
         $('#employeeModal').modal('hide');
 
         this.$swal({
@@ -324,7 +327,22 @@ export default {
         }
 
         this.setViewProps();     
-    }
+    },
+    capitalize(value){
+      value = value.toString().toLowerCase();
+      return value.charAt(0).toUpperCase() + value.slice(1)
+    },
+  },
+  watch: {
+    'form.last_name'(){
+      this.form.last_name = this.capitalize(event.target.value);
+    },
+    'form.first_name'(){
+      this.form.first_name = this.capitalize(event.target.value);
+    },
+    'form.middle_name'(){
+      this.form.middle_name = this.capitalize(event.target.value);
+    }, 
   },
   created(){
     this.loadData();
