@@ -5,7 +5,7 @@
           <div class="card-header">
             <div class="row justify-content-between">
             <h3 class="card-title ml-2">Сотрудники</h3>
-            <button class="btn btn-success mr-2" @click="newEmployee">Добавить
+            <button class="btn btn-primary mr-2" @click="newEmployee">Добавить
               <i class="fas fa-user-plus"></i>
             </button>
             </div>
@@ -126,7 +126,7 @@
                   <div class="modal-footer">
                     <button type="button" class="btn btn-danger" data-dismiss="modal">Закрыть</button>
                     <button type="submit" class="btn btn-primary" v-if="editMode">Обновить</button>
-                    <button type="submit" class="btn btn-primary" v-if="!editMode">Создать</button>
+                    <button type="submit" class="btn btn-success" v-if="!editMode">Сохранить</button>
                   </div>
               </form>
           </div>
