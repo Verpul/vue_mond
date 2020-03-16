@@ -15,7 +15,9 @@ class TodoController extends Controller
      */
     public function index()
     {
-        //
+        return Todo::where('active', true)
+                ->orderByRaw('ISNULL(due_date), due_date ASC')
+                ->paginate(5);
     }
 
     /**
@@ -26,7 +28,18 @@ class TodoController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'title' => 'required|string|max:150',
+            'task' => 'required|string',
+            'due_date' => 'date|nullable'
+        ]);
+
+        Todo::create([
+            'title' => $request['title'],
+            'task' => $request['task'],
+            'active' => true,
+            'due_date' => $request['due_date'],
+        ]);
     }
 
     /**
@@ -58,8 +71,17 @@ class TodoController extends Controller
      * @param  \App\Todo  $todo
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Todo $todo)
+    public function destroy($id)
     {
-        //
+        $todo = Todo::findOrFail($id);
+
+        $todo->delete();
+    }
+
+    // finish Todo task
+    public function finishTodo($id){
+        $todo = Todo::findOrFail($id);
+
+        $todo->update(['active' => false]);
     }
 }

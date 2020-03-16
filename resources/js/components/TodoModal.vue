@@ -3,7 +3,7 @@
   <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">
 		  <div class="modal-header">
-			<h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+			<h5 class="modal-title" id="exampleModalLabel">Создать задачу</h5>
 			<button type="button" class="close" data-dismiss="modal" aria-label="Close"
 				@click="$emit('close')">
 			  <span aria-hidden="true">&times;</span>
@@ -20,34 +20,23 @@
 						</div>
 						<div class="form-group">
 							<label>Текст задачи</label>
-						  <textarea v-model="form.task" class="form-control" rows="3"></textarea>
-						  <has-error :form="form" field="email"></has-error>
+						  <textarea v-model="form.task" class="form-control" rows="3"
+						  :class="{ 'is-invalid': form.errors.has('task') }"></textarea>
+						  <has-error :form="form" field="task"></has-error>
 						</div>
 						<div class="form-group">
-							<div class="row">
-								<div class="col">
-							    <label>Приоритет</label>
-							    <select class="form-control" v-model="form.priority">
-							      <option value="Низкий">Низкий</option>
-							      <option value="Средний">Средний</option>
-							      <option value="Высокий">Высокий</option>
-							    </select>
-						  	</div>
-						  	<div class="col">
-							    <label class="text-nowrap">Выполнить до (необязательно)</label>
-							    <div class="input-group">
-							    	<div class="input-group-prepend">
-							    		<div class="input-group-text"><i class="fas fa-user-clock"></i></div>
-							    	</div>
-							    	<date-picker v-model="form.due_date" :config="options"></date-picker>
-							    </div>
-						    </div>
+					    <label>Выполнить до (необязательно для заполнения)</label>
+					    <div class="input-group">
+					    	<div class="input-group-prepend">
+					    		<div class="input-group-text"><i class="fas fa-user-clock"></i></div>
+					    	</div>
+					    	<date-picker v-model="form.due_date" :config="options"></date-picker>
 					    </div>
-					  </div>
+				    </div>
 				  </div>
 				  <div class="modal-footer">
 					<button type="button" class="btn btn-danger" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
-					<button type="submit" class="btn btn-success">Сохранить</button>
+					<button type="submit" class="btn btn-success" @click.prevent="createTodo">Сохранить</button>
 				  </div>
 			  </form>
 		  </div>
@@ -66,7 +55,7 @@
 			return {
 				date: new Date(),
 				options: {
-					format: 'DD/MM/YYYY HH:mm',
+					format: 'DD.MM.YYYY HH:mm',
 					locale: this.$moment.locale(),
 					icons: {
 			      time: 'far fa-clock',
@@ -79,18 +68,51 @@
 			      clear: 'far fa-trash-alt',
 			      close: 'far fa-times-circle'
     			},
+    			showClose: true,
+    			showClear: true
 				},
 				form: new Form({
 					id: '',
 					title: '',
 					task: '',
-					priority: 'Низкий',
 					due_date: null
 				})
 			}
 		},
+		methods: {
+			createTodo(){
+				//Форматируем дату для MySQL
+				if(this.form.due_date !== null){
+					this.form.due_date = this.$moment(this.form.due_date, 'DD.MM.YYYY HH:mm')
+						.format('YYYY/MM/DD HH:mm');
+				};
+
+				this.form.post('/api/todo')
+	      .then(() => {
+	        this.$emit('loadTodos');
+	        this.$emit('close');
+
+	        this.$swal({
+	            toast: true,
+	            position: 'top-end',
+	            showConfirmButton: false,
+	            timer: 3000,
+	            icon: 'success',
+	            title: 'Новая задача добавлена!'
+	        });
+	      })
+			}
+		},
+		created() {
+			if(this.editMode){
+				this.form.fill(this.todo);
+			}
+		},
 		components: {
 			datePicker
-		}
+		},
+		props: [
+			'todo', 'editMode'
+		]
 	}
 </script>

@@ -235,6 +235,7 @@ export default {
       })
     },
     editEmployee(employee){
+      console.log(employee);
       this.editMode = true;
       this.form.clear();
       this.form.reset();

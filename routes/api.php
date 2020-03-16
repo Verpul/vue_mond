@@ -20,3 +20,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::get('employees/params', 'API\EmployeeController@setViewParams');
 Route::apiResource('employees', 'API\EmployeeController');
 
+Route::put('todo/active/{id}', 'API\TodoController@finishTodo');
+Route::apiResource('todo', 'API\TodoController');
+

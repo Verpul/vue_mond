@@ -17,8 +17,8 @@ class CreateTodosTable extends Migration
             $table->increments('id');
             $table->string('title', 150);
             $table->text('task');
-            $table->string('priority');
-            $table->date('due_date')->nullable();
+            $table->boolean('active')->default(true);
+            $table->datetime('due_date')->nullable();
             $table->timestamps();
         });
     }

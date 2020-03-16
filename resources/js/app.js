@@ -25,6 +25,7 @@ Vue.use(require('vue-moment'), {
 	moment
 });
 
+
 const app = new Vue({
 	router,
     el: '#app',
