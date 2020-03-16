@@ -1,35 +1,44 @@
 <template>
   <ul class="todo-list">
     <li v-for="todo in todos.data" :key="todo.id">
-      <!-- drag handle -->
-      <span class="handle">
-        <i class="fas fa-ellipsis-v"></i>
-        <i class="fas fa-ellipsis-v"></i>
-      </span>
-      
-      <!-- checkbox -->
-      <div  class="icheck-primary d-inline ml-2" v-if="todo.active">
-        <input type="checkbox" value="" 
-          :name="'todo' + todo.id" 
-          :id="'todoCheck' + todo.id"
-          @click.prevent="completeTodo(todo.id)">
-        <label :for="'todoCheck' + todo.id"></label>
-      </div>
-      <!-- Emphasis label -->
-      <small class="badge text-white" :class="badgeColor(todo.due_date)" v-if="todo.active">
-        <i class="far fa-clock"></i>
-      </small>
-      <small>{{formatDate(todo.due_date)}}</small> 
-      <small class="badge badge-dark" v-if="!todo.active">
-        <i class="far fa-clock"></i> Завершена 
-      </small>
-      <!-- todo text -->
-      <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.title }}:</span>
-      <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.task }}</span>
-      <!-- General tools such as edit or delete-->
-      <div class="tools">
-        <i class="fas fa-edit" @click="editTodo(todo)"></i>
-        <i class="fas fa-trash" @click="deleteTodo(todo.id)"></i>
+      <div class="row m-0">
+        <div class="col col-md-auto p-0">
+          <!-- drag handle -->
+          <span class="handle ">
+            <i class="fas fa-ellipsis-v"></i>
+            <i class="fas fa-ellipsis-v"></i>
+          </span>
+          <span style="cursor: pointer" @click="slideSteps(todo.id)">
+            <i class="fas fa-chevron-circle-right"></i>
+          </span>
+          <!-- checkbox -->
+          <div class="icheck-primary d-inline ml-1" v-if="todo.active">
+            <input type="checkbox" value="" 
+              :name="'todo' + todo.id" 
+              :id="'todoCheck' + todo.id"
+              @click.prevent="completeTodo(todo.id)">
+            <label :for="'todoCheck' + todo.id"></label>
+          </div>
+          <!-- Emphasis label -->
+          <small class="badge text-white ml-0" :class="badgeColor(todo.due_date)" v-if="todo.active">
+            <i class="far fa-clock"></i>
+          </small>
+          <small>{{formatDate(todo.due_date)}}</small> 
+          <small class="badge badge-dark" v-if="!todo.active">
+            <i class="far fa-clock"></i> Завершена 
+          </small>
+        </div>
+        <div class="col">
+          <!-- todo title -->
+          <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.title }}:</span>
+          <!-- General tools such as edit or delete-->
+          <div class="tools">
+            <i class="fas fa-edit" @click="openEditForm(todo)"></i>
+            <i class="fas fa-trash" @click="deleteTodo(todo.id)"></i>
+          </div>
+          <!-- todo text -->
+          <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.task }}</span>
+        </div>
       </div>
     </li>
   </ul>
@@ -103,10 +112,45 @@
         })
       },
       deleteTodo(id){
-        this.$emit('deleteTodo', id);
+        this.$swal({
+          title: 'Вы уверены?',
+          text: "Задача будет удалена!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Да, удалить!',
+          cancelButtonText: 'Отмена'
+          }).then((result) => {
+              if (result.value) {
+                  //Send delete request
+                  axios.delete('api/todo/' + id).then(() => {
+                      //reload data table
+                      this.$emit('loadTodos');
+
+                      this.$swal({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        icon: 'success',
+                        title: 'Задача удалена!'
+                      });   
+                  }).catch(() => {
+                      this.$swal(
+                          'Действие отменено',
+                          'Что-то пошло не так',
+                          'error'
+                      )
+                  });
+              }       
+        })
       },
-      editTodo(todo){
-        this.$emit('editTodo', todo);
+      openEditForm(todo){
+        this.$emit('openEdit', todo);
+      },
+      slideSteps(id){
+
       }
     },
     props: [
@@ -114,5 +158,9 @@
     ]
   }
 </script>
+
+<style>
+  
+</style>
 
 

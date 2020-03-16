@@ -2154,7 +2154,6 @@ __webpack_require__.r(__webpack_exports__);
       });
     },
     editEmployee: function editEmployee(employee) {
-      console.log(employee);
       this.editMode = true;
       this.form.clear();
       this.form.reset();
@@ -2255,15 +2254,16 @@ __webpack_require__.r(__webpack_exports__);
       return value.charAt(0).toUpperCase() + value.slice(1);
     }
   },
+  //Применять только если событие это ввод с клавиатуры
   watch: {
     'form.last_name': function formLast_name() {
-      this.form.last_name = this.capitalize(event.target.value);
+      if (event.type !== 'click') this.form.last_name = this.capitalize(event.target.value);
     },
     'form.first_name': function formFirst_name() {
-      this.form.first_name = this.capitalize(event.target.value);
+      if (event.type !== 'click') this.form.first_name = this.capitalize(event.target.value);
     },
     'form.middle_name': function formMiddle_name() {
-      this.form.middle_name = this.capitalize(event.target.value);
+      if (event.type !== 'click') this.form.middle_name = this.capitalize(event.target.value);
     }
   },
   created: function created() {
@@ -2323,8 +2323,6 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
-//
-//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2332,9 +2330,11 @@ __webpack_require__.r(__webpack_exports__);
   data: function data() {
     return {
       showModal: false,
-      editMode: false,
-      todo: {},
-      todos: {}
+      todos: {},
+      modalData: {
+        editMode: false,
+        todo: {}
+      }
     };
   },
   methods: {
@@ -2357,16 +2357,14 @@ __webpack_require__.r(__webpack_exports__);
         loader.hide();
       });
     },
-    deleteTodo: function deleteTodo(id) {
-      var _this3 = this;
-
-      axios["delete"]('api/todo/' + id).then(function () {
-        _this3.loadTodos();
-      });
+    openEdit: function openEdit(todo) {
+      this.modalData.todo = todo;
+      this.modalData.editMode = true;
+      this.showModal = true;
     },
-    editTodo: function editTodo(todo) {
-      this.todo = todo;
-      this.editMode = true;
+    openCreate: function openCreate() {
+      this.modalData.todo = {};
+      this.modalData.editMode = false;
       this.showModal = true;
     }
   },
@@ -2441,13 +2439,15 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: "ModalComponent",
   data: function data() {
     return {
-      date: new Date(),
       options: {
         format: 'DD.MM.YYYY HH:mm',
         locale: this.$moment.locale(),
@@ -2497,17 +2497,46 @@ __webpack_require__.r(__webpack_exports__);
           title: 'Новая задача добавлена!'
         });
       });
+    },
+    editTodo: function editTodo() {
+      var _this2 = this;
+
+      //Форматируем дату для MySQL
+      if (this.form.due_date !== null) {
+        this.form.due_date = this.$moment(this.form.due_date, 'DD.MM.YYYY HH:mm').format('YYYY/MM/DD HH:mm');
+      }
+
+      ;
+      this.form.put('/api/todo/' + this.form.id).then(function () {
+        _this2.$emit('loadTodos');
+
+        _this2.$emit('close');
+
+        _this2.$swal({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          icon: 'success',
+          title: 'Задача изменена!'
+        });
+      });
     }
   },
   created: function created() {
-    if (this.editMode) {
-      this.form.fill(this.todo);
+    this.form.clear();
+    this.form.reset(); //Если это редактирование - заполняем поля
+
+    if (this.modalData.editMode) {
+      this.form.fill(this.modalData.todo); //Переводим из строки в дату для input type=date
+
+      this.form.due_date = new Date(this.modalData.todo.due_date);
     }
   },
   components: {
     datePicker: vue_bootstrap_datetimepicker__WEBPACK_IMPORTED_MODULE_0___default.a
   },
-  props: ['todo', 'editMode']
+  props: ['modalData']
 });
 
 /***/ }),
@@ -2521,6 +2550,15 @@ __webpack_require__.r(__webpack_exports__);
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -2624,11 +2662,42 @@ __webpack_require__.r(__webpack_exports__);
       });
     },
     deleteTodo: function deleteTodo(id) {
-      this.$emit('deleteTodo', id);
+      var _this2 = this;
+
+      this.$swal({
+        title: 'Вы уверены?',
+        text: "Задача будет удалена!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Да, удалить!',
+        cancelButtonText: 'Отмена'
+      }).then(function (result) {
+        if (result.value) {
+          //Send delete request
+          axios["delete"]('api/todo/' + id).then(function () {
+            //reload data table
+            _this2.$emit('loadTodos');
+
+            _this2.$swal({
+              toast: true,
+              position: 'top-end',
+              showConfirmButton: false,
+              timer: 3000,
+              icon: 'success',
+              title: 'Задача удалена!'
+            });
+          })["catch"](function () {
+            _this2.$swal('Действие отменено', 'Что-то пошло не так', 'error');
+          });
+        }
+      });
     },
-    editTodo: function editTodo(todo) {
-      this.$emit('editTodo', todo);
-    }
+    openEditForm: function openEditForm(todo) {
+      this.$emit('openEdit', todo);
+    },
+    slideSteps: function slideSteps(id) {}
   },
   props: ['todos']
 });
@@ -62237,11 +62306,7 @@ var render = function() {
                 {
                   staticClass: "btn btn-primary float-right",
                   attrs: { type: "button" },
-                  on: {
-                    click: function($event) {
-                      _vm.showModal = true
-                    }
-                  }
+                  on: { click: _vm.openCreate }
                 },
                 [_c("i", { staticClass: "fas fa-plus" }), _vm._v(" Добавить")]
               )
@@ -62253,11 +62318,7 @@ var render = function() {
               [
                 _c("todo-task", {
                   attrs: { todos: _vm.todos },
-                  on: {
-                    loadTodos: _vm.loadTodos,
-                    deleteTodo: _vm.deleteTodo,
-                    editTodo: _vm.editTodo
-                  }
+                  on: { loadTodos: _vm.loadTodos, openEdit: _vm.openEdit }
                 })
               ],
               1
@@ -62283,7 +62344,7 @@ var render = function() {
       _vm._v(" "),
       _vm.showModal
         ? _c("todo-modal", {
-            attrs: { todo: _vm.todo, editMode: _vm.editMode },
+            attrs: { modalData: _vm.modalData },
             on: {
               close: function($event) {
                 _vm.showModal = false
@@ -62333,10 +62394,10 @@ var render = function() {
     {
       staticClass: "modal fade show d-block",
       attrs: {
-        id: "exampleModal",
+        id: "todoModal",
         tabindex: "-1",
         role: "dialog",
-        "aria-labelledby": "exampleModalLabel",
+        "aria-labelledby": "todoModalLabel",
         "aria-hidden": "true"
       }
     },
@@ -62350,14 +62411,23 @@ var render = function() {
         [
           _c("div", { staticClass: "modal-content" }, [
             _c("div", { staticClass: "modal-header" }, [
-              _c(
-                "h5",
-                {
-                  staticClass: "modal-title",
-                  attrs: { id: "exampleModalLabel" }
-                },
-                [_vm._v("Создать задачу")]
-              ),
+              !_vm.modalData.editMode
+                ? _c(
+                    "h5",
+                    {
+                      staticClass: "modal-title",
+                      attrs: { id: "todoModalLabel" }
+                    },
+                    [_vm._v("Создание задачи")]
+                  )
+                : _c(
+                    "h5",
+                    {
+                      staticClass: "modal-title",
+                      attrs: { id: "todoModalLabel" }
+                    },
+                    [_vm._v("Редактирование задачи")]
+                  ),
               _vm._v(" "),
               _c(
                 "button",
@@ -62488,7 +62558,7 @@ var render = function() {
                   _c(
                     "button",
                     {
-                      staticClass: "btn btn-danger",
+                      staticClass: "btn btn-primary",
                       attrs: { type: "button", "data-dismiss": "modal" },
                       on: {
                         click: function($event) {
@@ -62507,7 +62577,9 @@ var render = function() {
                       on: {
                         click: function($event) {
                           $event.preventDefault()
-                          return _vm.createTodo($event)
+                          _vm.modalData.editMode
+                            ? _vm.editTodo()
+                            : _vm.createTodo()
                         }
                       }
                     },
@@ -62560,79 +62632,98 @@ var render = function() {
     { staticClass: "todo-list" },
     _vm._l(_vm.todos.data, function(todo) {
       return _c("li", { key: todo.id }, [
-        _vm._m(0, true),
-        _vm._v(" "),
-        todo.active
-          ? _c("div", { staticClass: "icheck-primary d-inline ml-2" }, [
-              _c("input", {
-                attrs: {
-                  type: "checkbox",
-                  value: "",
-                  name: "todo" + todo.id,
-                  id: "todoCheck" + todo.id
-                },
+        _c("div", { staticClass: "row m-0" }, [
+          _c("div", { staticClass: "col col-md-auto p-0" }, [
+            _vm._m(0, true),
+            _vm._v(" "),
+            _c(
+              "span",
+              {
+                staticStyle: { cursor: "pointer" },
                 on: {
                   click: function($event) {
-                    $event.preventDefault()
-                    return _vm.completeTodo(todo.id)
+                    return _vm.slideSteps(todo.id)
+                  }
+                }
+              },
+              [_c("i", { staticClass: "fas fa-chevron-circle-right" })]
+            ),
+            _vm._v(" "),
+            todo.active
+              ? _c("div", { staticClass: "icheck-primary d-inline ml-1" }, [
+                  _c("input", {
+                    attrs: {
+                      type: "checkbox",
+                      value: "",
+                      name: "todo" + todo.id,
+                      id: "todoCheck" + todo.id
+                    },
+                    on: {
+                      click: function($event) {
+                        $event.preventDefault()
+                        return _vm.completeTodo(todo.id)
+                      }
+                    }
+                  }),
+                  _vm._v(" "),
+                  _c("label", { attrs: { for: "todoCheck" + todo.id } })
+                ])
+              : _vm._e(),
+            _vm._v(" "),
+            todo.active
+              ? _c(
+                  "small",
+                  {
+                    staticClass: "badge text-white ml-0",
+                    class: _vm.badgeColor(todo.due_date)
+                  },
+                  [_c("i", { staticClass: "far fa-clock" })]
+                )
+              : _vm._e(),
+            _vm._v(" "),
+            _c("small", [_vm._v(_vm._s(_vm.formatDate(todo.due_date)))]),
+            _vm._v(" "),
+            !todo.active
+              ? _c("small", { staticClass: "badge badge-dark" }, [
+                  _c("i", { staticClass: "far fa-clock" }),
+                  _vm._v(" Завершена \n        ")
+                ])
+              : _vm._e()
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "col" }, [
+            _c(
+              "span",
+              { staticClass: "text", class: todo.active ? "" : "text-muted" },
+              [_vm._v(_vm._s(todo.title) + ":")]
+            ),
+            _vm._v(" "),
+            _c("div", { staticClass: "tools" }, [
+              _c("i", {
+                staticClass: "fas fa-edit",
+                on: {
+                  click: function($event) {
+                    return _vm.openEditForm(todo)
                   }
                 }
               }),
               _vm._v(" "),
-              _c("label", { attrs: { for: "todoCheck" + todo.id } })
-            ])
-          : _vm._e(),
-        _vm._v(" "),
-        todo.active
-          ? _c(
-              "small",
-              {
-                staticClass: "badge text-white",
-                class: _vm.badgeColor(todo.due_date)
-              },
-              [_c("i", { staticClass: "far fa-clock" })]
+              _c("i", {
+                staticClass: "fas fa-trash",
+                on: {
+                  click: function($event) {
+                    return _vm.deleteTodo(todo.id)
+                  }
+                }
+              })
+            ]),
+            _vm._v(" "),
+            _c(
+              "span",
+              { staticClass: "text", class: todo.active ? "" : "text-muted" },
+              [_vm._v(_vm._s(todo.task))]
             )
-          : _vm._e(),
-        _vm._v(" "),
-        _c("small", [_vm._v(_vm._s(_vm.formatDate(todo.due_date)))]),
-        _vm._v(" "),
-        !todo.active
-          ? _c("small", { staticClass: "badge badge-dark" }, [
-              _c("i", { staticClass: "far fa-clock" }),
-              _vm._v(" Завершена \n    ")
-            ])
-          : _vm._e(),
-        _vm._v(" "),
-        _c(
-          "span",
-          { staticClass: "text", class: todo.active ? "" : "text-muted" },
-          [_vm._v(_vm._s(todo.title) + ":")]
-        ),
-        _vm._v(" "),
-        _c(
-          "span",
-          { staticClass: "text", class: todo.active ? "" : "text-muted" },
-          [_vm._v(_vm._s(todo.task))]
-        ),
-        _vm._v(" "),
-        _c("div", { staticClass: "tools" }, [
-          _c("i", {
-            staticClass: "fas fa-edit",
-            on: {
-              click: function($event) {
-                return _vm.editTodo(todo)
-              }
-            }
-          }),
-          _vm._v(" "),
-          _c("i", {
-            staticClass: "fas fa-trash",
-            on: {
-              click: function($event) {
-                return _vm.deleteTodo(todo.id)
-              }
-            }
-          })
+          ])
         ])
       ])
     }),
@@ -62644,7 +62735,7 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("span", { staticClass: "handle" }, [
+    return _c("span", { staticClass: "handle " }, [
       _c("i", { staticClass: "fas fa-ellipsis-v" }),
       _vm._v(" "),
       _c("i", { staticClass: "fas fa-ellipsis-v" })

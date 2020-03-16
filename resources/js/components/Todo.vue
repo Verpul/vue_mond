@@ -9,15 +9,14 @@
               <i class="ion ion-clipboard mr-1"></i>
               Задачи
             </h3>
-            <button type="button" class="btn btn-primary float-right" @click="showModal = true"><i class="fas fa-plus"></i> Добавить</button>
+            <button type="button" class="btn btn-primary float-right" @click="openCreate"><i class="fas fa-plus"></i> Добавить</button>
           </div>
           <!-- /.card-header -->
           <div class="card-body">
             <todo-task 
               :todos="todos" 
               @loadTodos="loadTodos"
-              @deleteTodo="deleteTodo"
-              @editTodo="editTodo"
+              @openEdit="openEdit"
               ></todo-task>  
           </div>
           <!-- /.card-body -->
@@ -31,8 +30,7 @@
       </div>
     </div>
     <todo-modal v-if="showModal"
-      :todo='todo'
-      :editMode='editMode'
+      :modalData="modalData"
       @close="showModal = false" 
       @loadTodos="loadTodos">
     </todo-modal>
@@ -48,9 +46,11 @@
       data(){
         return {
           showModal: false,
-          editMode: false,
-          todo: {},
           todos: {},
+          modalData: {
+            editMode: false,
+            todo: {},
+          }
         }
       },
       methods: {
@@ -72,15 +72,14 @@
               loader.hide();
           });
         },
-        deleteTodo(id){
-          axios.delete('api/todo/' + id)
-          .then(() => {
-            this.loadTodos();
-          });
+        openEdit(todo){
+          this.modalData.todo = todo;
+          this.modalData.editMode = true;
+          this.showModal = true;
         },
-        editTodo(todo){
-          this.todo = todo;
-          this.editMode = true;
+        openCreate(){
+          this.modalData.todo = {};
+          this.modalData.editMode = false;
           this.showModal = true;
         }
       },  

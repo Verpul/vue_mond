@@ -17,7 +17,7 @@ class TodoController extends Controller
     {
         return Todo::where('active', true)
                 ->orderByRaw('ISNULL(due_date), due_date ASC')
-                ->paginate(5);
+                ->paginate(10);
     }
 
     /**
@@ -60,9 +60,17 @@ class TodoController extends Controller
      * @param  \App\Todo  $todo
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Todo $todo)
+    public function update(Request $request, $id)
     {
-        //
+        $todo = Todo::findOrFail($id);
+
+        $this->validate($request, [
+            'title' => 'required|string|max:150',
+            'task' => 'required|string',
+            'due_date' => 'date|nullable'
+        ]);
+
+        $todo->update($request->all());
     }
 
     /**

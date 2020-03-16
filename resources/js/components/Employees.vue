@@ -235,7 +235,6 @@ export default {
       })
     },
     editEmployee(employee){
-      console.log(employee);
       this.editMode = true;
       this.form.clear();
       this.form.reset();
@@ -337,14 +336,18 @@ export default {
       return value.charAt(0).toUpperCase() + value.slice(1)
     },
   },
+  //Применять только если событие это ввод с клавиатуры
   watch: {
     'form.last_name'(){
+      if(event.type !== 'click')
       this.form.last_name = this.capitalize(event.target.value);
     },
     'form.first_name'(){
+      if(event.type !== 'click')
       this.form.first_name = this.capitalize(event.target.value);
     },
     'form.middle_name'(){
+      if(event.type !== 'click')
       this.form.middle_name = this.capitalize(event.target.value);
     }, 
   },

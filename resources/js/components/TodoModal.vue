@@ -1,9 +1,10 @@
 <template>
-<div class="modal fade show d-block" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+<div class="modal fade show d-block" id="todoModal" tabindex="-1" role="dialog" aria-labelledby="todoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">
 		  <div class="modal-header">
-			<h5 class="modal-title" id="exampleModalLabel">Создать задачу</h5>
+			<h5 class="modal-title" id="todoModalLabel" v-if="!modalData.editMode">Создание задачи</h5>
+			<h5 class="modal-title" id="todoModalLabel" v-else>Редактирование задачи</h5>
 			<button type="button" class="close" data-dismiss="modal" aria-label="Close"
 				@click="$emit('close')">
 			  <span aria-hidden="true">&times;</span>
@@ -35,8 +36,10 @@
 				    </div>
 				  </div>
 				  <div class="modal-footer">
-					<button type="button" class="btn btn-danger" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
-					<button type="submit" class="btn btn-success" @click.prevent="createTodo">Сохранить</button>
+					<button type="button" class="btn btn-primary" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
+					<button type="submit" class="btn btn-success" 
+						@click.prevent="modalData.editMode ? editTodo() : createTodo()" 
+						>Сохранить</button>
 				  </div>
 			  </form>
 		  </div>
@@ -53,7 +56,6 @@
 		name: "ModalComponent",
 		data(){
 			return {
-				date: new Date(),
 				options: {
 					format: 'DD.MM.YYYY HH:mm',
 					locale: this.$moment.locale(),
@@ -101,18 +103,47 @@
 	            title: 'Новая задача добавлена!'
 	        });
 	      })
-			}
+			},
+			editTodo(){
+				//Форматируем дату для MySQL
+				if(this.form.due_date !== null){
+					this.form.due_date = this.$moment(this.form.due_date, 'DD.MM.YYYY HH:mm')
+						.format('YYYY/MM/DD HH:mm');
+				};
+
+				this.form.put('/api/todo/'+this.form.id)
+	      .then(() => {
+	        this.$emit('loadTodos');
+	        this.$emit('close');
+
+	        this.$swal({
+	            toast: true,
+	            position: 'top-end',
+	            showConfirmButton: false,
+	            timer: 3000,
+	            icon: 'success',
+	            title: 'Задача изменена!'
+	        });
+	      })
+			},
 		},
+		
 		created() {
-			if(this.editMode){
-				this.form.fill(this.todo);
+			this.form.clear();
+      this.form.reset();
+
+      //Если это редактирование - заполняем поля
+			if(this.modalData.editMode){
+				this.form.fill(this.modalData.todo);
+				//Переводим из строки в дату для input type=date
+				this.form.due_date = new Date(this.modalData.todo.due_date);
 			}
 		},
 		components: {
 			datePicker
 		},
 		props: [
-			'todo', 'editMode'
+			'modalData'
 		]
 	}
 </script>
