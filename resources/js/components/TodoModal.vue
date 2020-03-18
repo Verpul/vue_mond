@@ -53,7 +53,7 @@
 	import 'pc-bootstrap4-datetimepicker/build/css/bootstrap-datetimepicker.css';
 
 	export default {
-		name: "ModalComponent",
+		name: "TodoModal",
 		data(){
 			return {
 				options: {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Todo;
+use App\Todo_step;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -16,6 +17,7 @@ class TodoController extends Controller
     public function index()
     {
         return Todo::where('active', true)
+                ->with('steps')
                 ->orderByRaw('ISNULL(due_date), due_date ASC')
                 ->paginate(10);
     }
@@ -82,7 +84,6 @@ class TodoController extends Controller
     public function destroy($id)
     {
         $todo = Todo::findOrFail($id);
-
         $todo->delete();
     }
 
@@ -91,5 +92,34 @@ class TodoController extends Controller
         $todo = Todo::findOrFail($id);
 
         $todo->update(['active' => false]);
+    }
+
+    public function addStep(Request $request, $id){
+
+        $this->validate($request, [
+            'step' => 'required|string',
+            'todo_id' => 'required|numeric',
+        ]);
+
+        Todo_step::create([
+            'step' => $request['step'],
+            'todo_id' => $request['todo_id'],
+        ]);
+    }
+
+    public function deleteStep($id)
+    {
+        $todo = Todo_step::findOrFail($id);
+        $todo->delete();
+    }
+
+    public function loadSteps(){
+        $todoId = \Request::get('todoId');
+        
+        $steps = Todo_step::where('todo_id', $todoId)
+                                ->orderBy('id')
+                                ->get();
+
+        return $steps;
     }
 }

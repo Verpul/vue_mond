@@ -8,9 +8,15 @@
             <i class="fas fa-ellipsis-v"></i>
             <i class="fas fa-ellipsis-v"></i>
           </span>
-          <span style="cursor: pointer" @click="slideSteps(todo.id)">
-            <i class="fas fa-chevron-circle-right"></i>
+          <!-- Add and show todo steps -->
+          <span style="cursor: pointer" @click="addStepModal(todo.id)">
+            <i class="fas fa-plus-circle"></i>
           </span>
+          <span style="cursor: pointer" @click="slideSteps(todo.id)" v-if="todo.steps.length !== 0">
+            <i :class="showSteps(todo.id) ? 
+              'fas fa-chevron-circle-down' : 'fas fa-chevron-circle-right'"></i>
+          </span>
+          
           <!-- checkbox -->
           <div class="icheck-primary d-inline ml-1" v-if="todo.active">
             <input type="checkbox" value="" 
@@ -37,17 +43,33 @@
             <i class="fas fa-trash" @click="deleteTodo(todo.id)"></i>
           </div>
           <!-- todo text -->
-          <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.task }}</span>
+          <span class="text font-weight-light" :class="todo.active ? '' : 'text-muted'">
+          {{ todo.task }}</span>
+          <todo-step :steps="todo.steps" v-if="showSteps(todo.id)"></todo-step>
         </div>
       </div>
     </li>
+    <step-modal v-if="showStepModal"
+      :todoId="todoId"
+      @closeStepModal="showStepModal = false">
+    </step-modal>
   </ul>
 </template>
 
 <script>
+  import TodoStepModal from './TodoStepModal';
+  import TodoStep from './TodoStep';
 
   export default{
+    data(){
+      return {
+        showStepModal: false,
+        todoId: '',
+        showStepsId: []
+      }
+    },
     methods: {
+      // Отображает сколько осталось времени до истечения срока
       formatDate(date){
         if(date){
           let newDate = this.$moment(date).format('DD.MM.YYYY HH:mm');
@@ -149,9 +171,31 @@
       openEditForm(todo){
         this.$emit('openEdit', todo);
       },
+      // Добавляем или убираем id задачи для отображения и скрытия шагов выполнения
       slideSteps(id){
-
+        var index = this.showStepsId.indexOf(id);
+        if(index == -1){
+          this.showStepsId.push(id);
+        }else{
+          this.showStepsId.splice(index, 1);
+        }
+      },
+      // Показываем модальное окно добавления шагов выполнения
+      addStepModal(id){
+        this.todoId = id;
+        this.showStepModal = true;
+      },
+      // Если значение в массиве, то показываем шаги выполнения
+      showSteps(id){
+        if(this.showStepsId.indexOf(id) >= 0){
+          return true;
+        }
+        return false;
       }
+    },
+    components: {
+      'step-modal': TodoStepModal,
+      'todo-step': TodoStep
     },
     props: [
       'todos',
