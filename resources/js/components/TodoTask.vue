@@ -12,7 +12,7 @@
           <span style="cursor: pointer" @click="addStepModal(todo.id)">
             <i class="fas fa-plus-circle"></i>
           </span>
-          <span style="cursor: pointer" @click="slideSteps(todo.id)" v-if="todo.steps.length !== 0">
+          <span style="cursor: pointer" @click="changeStepsVisible(todo.id)" v-if="todo.steps.length !== 0">
             <i :class="showSteps(todo.id) ? 
               'fas fa-chevron-circle-down' : 'fas fa-chevron-circle-right'"></i>
           </span>
@@ -45,12 +45,16 @@
           <!-- todo text -->
           <span class="text font-weight-light" :class="todo.active ? '' : 'text-muted'">
           {{ todo.task }}</span>
-          <todo-step :steps="todo.steps" v-if="showSteps(todo.id)"></todo-step>
+          <todo-step 
+            :steps="todo.steps"
+            @openEditStep='openEditStep'
+            v-if="showSteps(todo.id) && todo.steps.length !== 0"></todo-step>
         </div>
       </div>
     </li>
     <step-modal v-if="showStepModal"
-      :todoId="todoId"
+      :stepModalData="stepModalData"
+      @stepCreated="stepCreated"
       @closeStepModal="showStepModal = false">
     </step-modal>
   </ul>
@@ -65,7 +69,12 @@
       return {
         showStepModal: false,
         todoId: '',
-        showStepsId: []
+        showStepsId: [],
+        stepModalData: {
+          todoId: '',
+          step: {},
+          editMode: false
+        }
       }
     },
     methods: {
@@ -168,11 +177,19 @@
               }       
         })
       },
+      // Форма редактирования Todo
       openEditForm(todo){
         this.$emit('openEdit', todo);
       },
+      // Форма редактирования шага выполнения
+      openEditStep(step){
+        this.stepModalData.editMode = true;
+        this.stepModalData.step = step;
+        this.stepModalData.todoId = '';
+        this.showStepModal = true;
+      },
       // Добавляем или убираем id задачи для отображения и скрытия шагов выполнения
-      slideSteps(id){
+      changeStepsVisible(id){
         var index = this.showStepsId.indexOf(id);
         if(index == -1){
           this.showStepsId.push(id);
@@ -180,9 +197,18 @@
           this.showStepsId.splice(index, 1);
         }
       },
+      // После создания шага, он должен отобразиться
+      stepCreated(id){
+        var index = this.showStepsId.indexOf(id);
+        if(index == -1){
+          this.showStepsId.push(id);
+        }
+      },
       // Показываем модальное окно добавления шагов выполнения
       addStepModal(id){
-        this.todoId = id;
+        this.stepModalData.editMode = false;
+        this.stepModalData.step = {};
+        this.stepModalData.todoId = id;
         this.showStepModal = true;
       },
       // Если значение в массиве, то показываем шаги выполнения

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Todo_step extends Model
 {
-    protected $fillable = ['step', 'todo_id'];
+    protected $fillable = ['step', 'todo_id', 'active'];
 
     // Связь с таблицей Todo
     public function todo(){

@@ -127,12 +127,11 @@
 	      })
 			},
 		},
-		
 		created() {
 			this.form.clear();
-      this.form.reset();
+      		this.form.reset();
 
-      //Если это редактирование - заполняем поля
+      		//Если это редактирование - заполняем поля
 			if(this.modalData.editMode){
 				this.form.fill(this.modalData.todo);
 				//Переводим из строки в дату для input type=date

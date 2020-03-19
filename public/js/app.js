@@ -2341,19 +2341,46 @@ __webpack_require__.r(__webpack_exports__);
     loadTodos: function loadTodos() {
       var _this = this;
 
-      var loader = this.$loading.show({});
+      var loader = this.$loading.show({
+        container: this.$refs.loadingContainer
+      });
       axios.get('/api/todo').then(function (response) {
         _this.todos = response.data;
         loader.hide();
       });
     },
-    paginate: function paginate() {
+    //При изменении шагов выполнения
+    loadSteps: function loadSteps(todoId) {
       var _this2 = this;
 
+      var loader = this.$loading.show({
+        container: this.$refs.loadingContainer
+      });
+      axios.get('api/todo/step', {
+        params: {
+          todoId: todoId
+        }
+      }).then(function (result) {
+        _this2.todos.data.find(function (el) {
+          if (el.id === todoId) {
+            el.steps = result.data;
+          }
+
+          ;
+        });
+
+        loader.hide();
+      });
+    },
+    paginate: function paginate() {
+      var _this3 = this;
+
       var page = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1;
-      var loader = this.$loading.show({});
+      var loader = this.$loading.show({
+        container: this.$refs.loadingContainer
+      });
       axios.get('api/todo?page=' + page).then(function (response) {
-        _this2.todos = response.data;
+        _this3.todos = response.data;
         loader.hide();
       });
     },
@@ -2373,7 +2400,13 @@ __webpack_require__.r(__webpack_exports__);
     'todo-task': _TodoTask__WEBPACK_IMPORTED_MODULE_1__["default"]
   },
   created: function created() {
-    this.loadTodos();
+    var _this4 = this;
+
+    this.loadTodos(); //При изменении шагов выполнения
+
+    Fire.$on('loadSteps', function (todoId) {
+      _this4.loadSteps(todoId);
+    });
   }
 });
 
@@ -2564,9 +2597,17 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   methods: {
-    deleteStep: function deleteStep(id, todoId) {
+    deleteStep: function deleteStep(stepId, todoId) {
       var _this = this;
 
       this.$swal({
@@ -2580,10 +2621,8 @@ __webpack_require__.r(__webpack_exports__);
         cancelButtonText: 'Отмена'
       }).then(function (result) {
         if (result.value) {
-          //Send delete request
-          axios["delete"]('api/todo/step/' + id).then(function () {
-            //load changed steps
-            _this.loadSteps(todoId);
+          axios["delete"]('api/todo/step/' + stepId).then(function () {
+            Fire.$emit('loadSteps', todoId);
 
             _this.$swal({
               toast: true,
@@ -2599,15 +2638,25 @@ __webpack_require__.r(__webpack_exports__);
         }
       });
     },
-    loadSteps: function loadSteps(todoId) {
+    // Сменить статус шага на выполнено и обратно
+    changeStepStatus: function changeStepStatus(stepId, todoId, currentStatus) {
       var _this2 = this;
 
-      axios.get('api/todo/step', {
-        params: {
-          todoId: todoId
-        }
-      }).then(function (result) {
-        _this2.steps = result.data;
+      axios.put('api/todo/step/active/' + stepId, {
+        currentStatus: currentStatus
+      }).then(function () {
+        Fire.$emit('loadSteps', todoId);
+
+        _this2.$swal({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          icon: 'success',
+          title: 'Выполнено!'
+        });
+      })["catch"](function () {
+        _this2.$swal('Действие отменено', 'Что-то пошло не так', 'error');
       });
     }
   },
@@ -2658,6 +2707,9 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   name: 'TodoStepModal',
   data: function data() {
@@ -2673,8 +2725,14 @@ __webpack_require__.r(__webpack_exports__);
     createStep: function createStep() {
       var _this = this;
 
-      this.form.post('/api/todo/step/' + this.todoId).then(function () {
-        _this.$emit('loadTodos');
+      this.form.post('/api/todo/step', {
+        params: {
+          todoId: this.stepModalData.todoId
+        }
+      }).then(function () {
+        _this.$emit('stepCreated', _this.stepModalData.todoId);
+
+        Fire.$emit('loadSteps', _this.stepModalData.todoId);
 
         _this.$emit('closeStepModal');
 
@@ -2687,13 +2745,39 @@ __webpack_require__.r(__webpack_exports__);
           title: 'Новый шаг выполнения добавлен!'
         });
       });
+    },
+    editStep: function editStep() {
+      var _this2 = this;
+
+      this.form.post('/api/todo/step/' + this.form.id).then(function () {
+        _this2.$emit('stepCreated', _this2.form.todo_id);
+
+        Fire.$emit('loadSteps', _this2.form.todo_id);
+
+        _this2.$emit('closeStepModal');
+
+        _this2.$swal({
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          icon: 'success',
+          title: 'Новый шаг выполнения добавлен!'
+        });
+      });
     }
   },
-  // Для передачи на сервер через post
   created: function created() {
-    this.form.todo_id = this.todoId;
+    this.form.clear();
+    this.form.reset(); // Редактирование - заполняем поля, создание - передаем только Todo id
+
+    if (this.stepModalData.editMode) {
+      this.form.fill(this.stepModalData.step);
+    } else {
+      this.form.todo_id = this.stepModalData.todoId;
+    }
   },
-  props: ['todoId']
+  props: ['stepModalData']
 });
 
 /***/ }),
@@ -2767,6 +2851,10 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -2774,7 +2862,12 @@ __webpack_require__.r(__webpack_exports__);
     return {
       showStepModal: false,
       todoId: '',
-      showStepsId: []
+      showStepsId: [],
+      stepModalData: {
+        todoId: '',
+        step: {},
+        editMode: false
+      }
     };
   },
   methods: {
@@ -2875,11 +2968,19 @@ __webpack_require__.r(__webpack_exports__);
         }
       });
     },
+    // Форма редактирования Todo
     openEditForm: function openEditForm(todo) {
       this.$emit('openEdit', todo);
     },
+    // Форма редактирования шага выполнения
+    openEditStep: function openEditStep(step) {
+      this.stepModalData.editMode = true;
+      this.stepModalData.step = step;
+      this.stepModalData.todoId = '';
+      this.showStepModal = true;
+    },
     // Добавляем или убираем id задачи для отображения и скрытия шагов выполнения
-    slideSteps: function slideSteps(id) {
+    changeStepsVisible: function changeStepsVisible(id) {
       var index = this.showStepsId.indexOf(id);
 
       if (index == -1) {
@@ -2888,9 +2989,19 @@ __webpack_require__.r(__webpack_exports__);
         this.showStepsId.splice(index, 1);
       }
     },
+    // После создания шага, он должен отобразиться
+    stepCreated: function stepCreated(id) {
+      var index = this.showStepsId.indexOf(id);
+
+      if (index == -1) {
+        this.showStepsId.push(id);
+      }
+    },
     // Показываем модальное окно добавления шагов выполнения
     addStepModal: function addStepModal(id) {
-      this.todoId = id;
+      this.stepModalData.editMode = false;
+      this.stepModalData.step = {};
+      this.stepModalData.todoId = id;
       this.showStepModal = true;
     },
     // Если значение в массиве, то показываем шаги выполнения
@@ -62570,7 +62681,7 @@ var render = function() {
             _vm._v(" "),
             _c(
               "div",
-              { staticClass: "card-body" },
+              { ref: "loadingContainer", staticClass: "card-body" },
               [
                 _c("todo-task", {
                   attrs: { todos: _vm.todos },
@@ -62888,12 +62999,44 @@ var render = function() {
     _vm._v(" "),
     _c(
       "ul",
-      { staticClass: "pl-4" },
+      { staticClass: "pl-1 list-unstyled" },
       _vm._l(_vm.steps, function(step) {
         return _c("li", { key: step.id }, [
-          _vm._v(_vm._s(step.step) + "\n      "),
+          step.active
+            ? _c("i", {
+                staticClass: "fas fa-times text-danger",
+                staticStyle: { cursor: "pointer" },
+                on: {
+                  click: function($event) {
+                    return _vm.changeStepStatus(step.id, step.todo_id, false)
+                  }
+                }
+              })
+            : _c("i", {
+                staticClass: "fas fa-check text-success",
+                staticStyle: { cursor: "pointer" },
+                on: {
+                  click: function($event) {
+                    return _vm.changeStepStatus(step.id, step.todo_id, true)
+                  }
+                }
+              }),
+          _vm._v(" "),
+          _c(
+            "span",
+            { style: !step.active ? "text-decoration: line-through" : "" },
+            [_vm._v(_vm._s(step.step))]
+          ),
+          _vm._v(" "),
           _c("div", { staticClass: "tools" }, [
-            _c("i", { staticClass: "fas fa-edit c-orange" }),
+            _c("i", {
+              staticClass: "fas fa-edit c-orange",
+              on: {
+                click: function($event) {
+                  return _vm.$emit("openEditStep", step)
+                }
+              }
+            }),
             _vm._v(" "),
             _c("i", {
               staticClass: "fas fa-trash c-orange",
@@ -62954,11 +63097,23 @@ var render = function() {
         [
           _c("div", { staticClass: "modal-content" }, [
             _c("div", { staticClass: "modal-header" }, [
-              _c(
-                "h5",
-                { staticClass: "modal-title", attrs: { id: "todoModalLabel" } },
-                [_vm._v("Добавление шагов выполнения")]
-              ),
+              !_vm.stepModalData.editMode
+                ? _c(
+                    "h5",
+                    {
+                      staticClass: "modal-title",
+                      attrs: { id: "todoModalLabel" }
+                    },
+                    [_vm._v("Добавление шагов выполнения")]
+                  )
+                : _c(
+                    "h5",
+                    {
+                      staticClass: "modal-title",
+                      attrs: { id: "todoModalLabel" }
+                    },
+                    [_vm._v("Редактирование шага выполнения")]
+                  ),
               _vm._v(" "),
               _c(
                 "button",
@@ -62990,8 +63145,6 @@ var render = function() {
                     "div",
                     { staticClass: "form-group" },
                     [
-                      _c("label", [_vm._v("Текст")]),
-                      _vm._v(" "),
                       _c("textarea", {
                         directives: [
                           {
@@ -63046,11 +63199,13 @@ var render = function() {
                       on: {
                         click: function($event) {
                           $event.preventDefault()
-                          return _vm.createStep($event)
+                          _vm.stepModalData.editMode
+                            ? _vm.editStep()
+                            : _vm.createStep()
                         }
                       }
                     },
-                    [_vm._v("Сохранить")]
+                    [_vm._v("\r\n\t\t\t\t\t\tСохранить\r\n\t\t\t\t\t")]
                   )
                 ])
               ])
@@ -63113,7 +63268,7 @@ var render = function() {
                       staticStyle: { cursor: "pointer" },
                       on: {
                         click: function($event) {
-                          return _vm.slideSteps(todo.id)
+                          return _vm.changeStepsVisible(todo.id)
                         }
                       }
                     },
@@ -63211,8 +63366,11 @@ var render = function() {
                   [_vm._v("\n        " + _vm._s(todo.task))]
                 ),
                 _vm._v(" "),
-                _vm.showSteps(todo.id)
-                  ? _c("todo-step", { attrs: { steps: todo.steps } })
+                _vm.showSteps(todo.id) && todo.steps.length !== 0
+                  ? _c("todo-step", {
+                      attrs: { steps: todo.steps },
+                      on: { openEditStep: _vm.openEditStep }
+                    })
                   : _vm._e()
               ],
               1
@@ -63223,8 +63381,9 @@ var render = function() {
       _vm._v(" "),
       _vm.showStepModal
         ? _c("step-modal", {
-            attrs: { todoId: _vm.todoId },
+            attrs: { stepModalData: _vm.stepModalData },
             on: {
+              stepCreated: _vm.stepCreated,
               closeStepModal: function($event) {
                 _vm.showStepModal = false
               }
@@ -86944,6 +87103,7 @@ Vue.component(vform__WEBPACK_IMPORTED_MODULE_1__["HasError"].name, vform__WEBPAC
 Vue.component(vform__WEBPACK_IMPORTED_MODULE_1__["AlertError"].name, vform__WEBPACK_IMPORTED_MODULE_1__["AlertError"]);
 Vue.component('pagination', __webpack_require__(/*! laravel-vue-pagination */ "./node_modules/laravel-vue-pagination/dist/laravel-vue-pagination.common.js"));
 window.Form = vform__WEBPACK_IMPORTED_MODULE_1__["Form"];
+window.Fire = new Vue();
 
 var VueInputMask = __webpack_require__(/*! vue-inputmask */ "./node_modules/vue-inputmask/dist/vue-inputmask.js")["default"];
 

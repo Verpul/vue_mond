@@ -15,6 +15,7 @@ Vue.component(AlertError.name, AlertError)
 Vue.component('pagination', require('laravel-vue-pagination'));
 
 window.Form = Form;
+window.Fire = new Vue();
 
 const VueInputMask = require('vue-inputmask').default;
 

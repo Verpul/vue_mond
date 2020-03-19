@@ -21,8 +21,10 @@ Route::get('employees/params', 'API\EmployeeController@setViewParams');
 Route::apiResource('employees', 'API\EmployeeController');
 
 Route::get('todo/step', 'API\TodoController@loadSteps');
+Route::put('todo/step/active/{id}', 'API\TodoController@changeStepStatus');
 Route::delete('todo/step/{id}', 'API\TodoController@deleteStep');
-Route::post('todo/step/{id}', 'API\TodoController@addStep');
+Route::post('todo/step/{id}', 'API\TodoController@updateStep');
+Route::post('todo/step', 'API\TodoController@addStep');
 Route::put('todo/active/{id}', 'API\TodoController@finishTodo');
 Route::apiResource('todo', 'API\TodoController');
 

@@ -12,7 +12,7 @@
             <button type="button" class="btn btn-primary float-right" @click="openCreate"><i class="fas fa-plus"></i> Добавить</button>
           </div>
           <!-- /.card-header -->
-          <div class="card-body">
+          <div class="card-body" ref="loadingContainer">
             <todo-task 
               :todos="todos" 
               @loadTodos="loadTodos"
@@ -55,7 +55,7 @@
       },
       methods: {
         loadTodos(){
-          let loader = this.$loading.show({});
+          let loader = this.$loading.show({container: this.$refs.loadingContainer});
 
           axios.get('/api/todo')
           .then((response) => {
@@ -63,8 +63,25 @@
             loader.hide();
           })
         },
+        //При изменении шагов выполнения
+        loadSteps(todoId){
+          let loader = this.$loading.show({container: this.$refs.loadingContainer});
+
+          axios.get('api/todo/step', {
+            params: {
+              todoId: todoId
+            }
+          }).then((result) => {
+            this.todos.data.find((el) => {
+              if(el.id === todoId){
+                el.steps = result.data;
+              };
+            });
+            loader.hide();
+          })
+        },
         paginate(page = 1) {
-          let loader = this.$loading.show({});
+          let loader = this.$loading.show({container: this.$refs.loadingContainer});
 
           axios.get('api/todo?page=' + page)
             .then((response) => {
@@ -89,6 +106,10 @@
       },
       created() {
         this.loadTodos();
+        //При изменении шагов выполнения
+        Fire.$on('loadSteps', (todoId) => {
+          this.loadSteps(todoId);
+        });
       }
   }
 </script>

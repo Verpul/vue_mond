@@ -94,7 +94,7 @@ class TodoController extends Controller
         $todo->update(['active' => false]);
     }
 
-    public function addStep(Request $request, $id){
+    public function addStep(Request $request){
 
         $this->validate($request, [
             'step' => 'required|string',
@@ -104,13 +104,14 @@ class TodoController extends Controller
         Todo_step::create([
             'step' => $request['step'],
             'todo_id' => $request['todo_id'],
+            'active' => true
         ]);
     }
 
     public function deleteStep($id)
     {
-        $todo = Todo_step::findOrFail($id);
-        $todo->delete();
+        $step = Todo_step::findOrFail($id);
+        $step->delete();
     }
 
     public function loadSteps(){
@@ -121,5 +122,24 @@ class TodoController extends Controller
                                 ->get();
 
         return $steps;
+    }
+
+    public function updateStep(Request $request, $id)
+    {
+        $step = Todo_step::findOrFail($id);
+
+        $this->validate($request, [
+            'step' => 'required|string',
+            'todo_id' => 'required|numeric',
+        ]);
+
+        $step->update($request->all());
+    }
+
+    public function changeStepStatus($id){
+        $step = Todo_step::findOrFail($id);
+        $currentStatus = \Request::get('currentStatus');
+
+        $step->update(['active' => $currentStatus]);
     }
 }

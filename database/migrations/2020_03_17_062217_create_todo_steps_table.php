@@ -17,7 +17,8 @@ class CreateTodoStepsTable extends Migration
             $table->increments('id');
             $table->text('step');
             $table->unsignedInteger('todo_id');
-            $table->foreign('todo_id')->references('id')->on('todos')->onDelete('cascade');;
+            $table->foreign('todo_id')->references('id')->on('todos')->onDelete('cascade');
+            $table->boolean('active');
             $table->timestamps();
         });
     }
