@@ -12,7 +12,23 @@
             <button type="button" class="btn btn-primary float-right" @click="openCreate"><i class="fas fa-plus"></i> Добавить</button>
           </div>
           <!-- /.card-header -->
-          <div class="card-body" ref="loadingContainer">
+          <div class="card-body pb-0 pt-1">
+            <div class="form-inline">
+              <button class="btn btn-sm btn-light shadow-none mb-1 mr-2 border-left" 
+                @click="showViewOptions = !showViewOptions">Настройки
+              <i :class="showViewOptions ? 
+                'fas fa-angle-double-left' : 'fas fa-angle-double-right'">
+              </i>
+              </button>
+              <todo-view-options v-if="showViewOptions"
+                @showAllTasks="showAllTasks"
+                @setLimit="setLimit"
+              ></todo-view-options>
+            </div>
+          </div>
+          <hr class="mt-1 mb-1">
+
+          <div class="card-body pt-0" ref="loadingContainer">
             <todo-task 
               :todos="todos" 
               @loadTodos="loadTodos"
@@ -40,6 +56,7 @@
 <script>
   import TodoModal from './TodoModal';
   import TodoTask from './TodoTask';
+  import TodoViewOptions from './TodoViewOptions';
 
   export default {
       name: 'Todo',
@@ -50,6 +67,11 @@
           modalData: {
             editMode: false,
             todo: {},
+          },
+          showViewOptions: false,
+          viewOptions: {
+            limit: 5,
+            showCompleted: false
           }
         }
       },
@@ -57,8 +79,11 @@
         loadTodos(){
           let loader = this.$loading.show({container: this.$refs.loadingContainer});
 
-          axios.get('/api/todo')
-          .then((response) => {
+          axios.get('/api/todo', {
+            params: {
+              options: this.viewOptions
+            }
+          }).then((response) => {
             this.todos = response.data;
             loader.hide();
           })
@@ -83,7 +108,11 @@
         paginate(page = 1) {
           let loader = this.$loading.show({container: this.$refs.loadingContainer});
 
-          axios.get('api/todo?page=' + page)
+          axios.get('api/todo?page=' + page, {
+            params: {
+              options: this.viewOptions
+            }
+          })
             .then((response) => {
               this.todos = response.data;
               loader.hide();
@@ -98,11 +127,20 @@
           this.modalData.todo = {};
           this.modalData.editMode = false;
           this.showModal = true;
+        },
+        showAllTasks(){
+          this.viewOptions.showCompleted = !this.viewOptions.showCompleted;
+          this.loadTodos();
+        },
+        setLimit(value){
+          this.viewOptions.limit = value;
+          this.loadTodos();
         }
       },  
       components: {
         'todo-modal': TodoModal,
-        'todo-task': TodoTask
+        'todo-task': TodoTask,
+        'todo-view-options': TodoViewOptions
       },
       created() {
         this.loadTodos();

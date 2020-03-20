@@ -16,10 +16,17 @@ class TodoController extends Controller
      */
     public function index()
     {
-        return Todo::where('active', true)
-                ->with('steps')
-                ->orderByRaw('ISNULL(due_date), due_date ASC')
-                ->paginate(10);
+        $options = json_decode(\Request::get('options'), true);
+        $limit = $options['limit'];
+        $showCompleted = $options['showCompleted'];
+
+
+        $data =  Todo::with('steps');
+        if(!$showCompleted){
+            $data->where('active', true);
+        };
+        return $data->orderByRaw('ISNULL(due_date), due_date ASC')
+                    ->paginate($limit);
     }
 
     /**

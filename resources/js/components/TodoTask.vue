@@ -1,22 +1,21 @@
 <template>
-  <ul class="todo-list">
+  <div>
+    <draggable tag="ul" class="todo-list"
+      v-model="todos.data" @start="drag=true" @end="drag=false" handle=".handle">
     <li v-for="todo in todos.data" :key="todo.id">
       <div class="row m-0">
         <div class="col col-md-auto p-0">
           <!-- drag handle -->
-          <span class="handle ">
+          <span class="handle" v-if="showIcons">
             <i class="fas fa-ellipsis-v"></i>
             <i class="fas fa-ellipsis-v"></i>
           </span>
-          <!-- Add and show todo steps -->
-          <span style="cursor: pointer" @click="addStepModal(todo.id)">
-            <i class="fas fa-plus-circle"></i>
-          </span>
-          <span style="cursor: pointer" @click="changeStepsVisible(todo.id)" v-if="todo.steps.length !== 0">
-            <i :class="showSteps(todo.id) ? 
+          <!-- Show adn hide todo steps -->
+          <span style="cursor: pointer" @click="changeStepsVisible(todo.id)" 
+            v-if="todo.steps.length !== 0 && showIcons">
+            <i class="text-purple" :class="showSteps(todo.id) ? 
               'fas fa-chevron-circle-down' : 'fas fa-chevron-circle-right'"></i>
           </span>
-          
           <!-- checkbox -->
           <div class="icheck-primary d-inline ml-1" v-if="todo.active">
             <input type="checkbox" value="" 
@@ -26,20 +25,28 @@
             <label :for="'todoCheck' + todo.id"></label>
           </div>
           <!-- Emphasis label -->
-          <small class="badge text-white ml-0" :class="badgeColor(todo.due_date)" v-if="todo.active">
+          <small class="badge text-white ml-0" :class="badgeColor(todo.due_date)" 
+            v-if="todo.active && showIcons">
             <i class="far fa-clock"></i>
           </small>
-          <small>{{formatDate(todo.due_date)}}</small> 
-          <small class="badge badge-dark" v-if="!todo.active">
+          <small class="badge badge-dark" v-if="!todo.active && showIcons">
             <i class="far fa-clock"></i> Завершена 
           </small>
+          <small v-if="showDueDate">{{formatDate(todo.due_date)}}</small> 
         </div>
         <div class="col">
           <!-- todo title -->
           <span class="text" :class="todo.active ? '' : 'text-muted'">{{ todo.title }}:</span>
           <!-- General tools such as edit or delete-->
           <div class="tools">
-            <i class="fas fa-edit" @click="openEditForm(todo)"></i>
+            <i class="fas fa-plus-circle text-primary" 
+              @click="addStepModal(todo.id)"
+              v-if="todo.active">
+            </i>
+            <i class="fas fa-edit text-orange" 
+              @click="openEditForm(todo)"
+              v-if="todo.active">
+             </i>
             <i class="fas fa-trash" @click="deleteTodo(todo.id)"></i>
           </div>
           <!-- todo text -->
@@ -47,22 +54,25 @@
           {{ todo.task }}</span>
           <todo-step 
             :steps="todo.steps"
+            :active="todo.active"
             @openEditStep='openEditStep'
             v-if="showSteps(todo.id) && todo.steps.length !== 0"></todo-step>
         </div>
       </div>
     </li>
+    </draggable>
     <step-modal v-if="showStepModal"
       :stepModalData="stepModalData"
       @stepCreated="stepCreated"
       @closeStepModal="showStepModal = false">
     </step-modal>
-  </ul>
+  </div>
 </template>
 
 <script>
   import TodoStepModal from './TodoStepModal';
   import TodoStep from './TodoStep';
+  import draggable from 'vuedraggable';
 
   export default{
     data(){
@@ -74,7 +84,9 @@
           todoId: '',
           step: {},
           editMode: false
-        }
+        },
+        showIcons: true,
+        showDueDate: true
       }
     },
     methods: {
@@ -219,9 +231,18 @@
         return false;
       }
     },
+    created(){
+      Fire.$on('changeIconsView', () => {
+        this.showIcons = !this.showIcons;
+      });
+      Fire.$on('changeDueDateView', () => {
+        this.showDueDate = !this.showDueDate;
+      });
+    },
     components: {
       'step-modal': TodoStepModal,
-      'todo-step': TodoStep
+      'todo-step': TodoStep,
+      draggable,
     },
     props: [
       'todos',

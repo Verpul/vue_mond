@@ -3,17 +3,18 @@
     <hr class="mb-1 mt-1">
     <ul class="pl-1 list-unstyled">
       <li v-for="step in steps" :key="step.id">
-        <i class="fas fa-times text-danger" v-if="step.active" 
-          @click="changeStepStatus(step.id, step.todo_id, false)" 
-          style="cursor: pointer;"></i>
-        <i class="fas fa-check text-success" 
-          @click="changeStepStatus(step.id, step.todo_id, true)"
-          style="cursor: pointer;" 
-          v-else></i>
         <span :style="!step.active ? 'text-decoration: line-through': ''">{{step.step}}</span>
-        <div class="tools">
-          <i class="fas fa-edit c-orange" @click="$emit('openEditStep', step)"></i>
-          <i class="fas fa-trash c-orange" @click="deleteStep(step.id, step.todo_id)"></i>
+        <div class="tools" v-if="active">
+          <i class="fas fa-times text-danger" v-if="step.active" 
+            @click="changeStepStatus(step.id, step.todo_id, false)" ></i>
+          <i class="fas fa-check text-success" 
+            @click="changeStepStatus(step.id, step.todo_id, true)"
+            :class="!step.active ? 'pr-4': ''"
+            v-else></i>
+          <i class="fas fa-edit c-orange" 
+            @click="$emit('openEditStep', step)"
+            v-if="step.active"></i>
+          <i class="fas fa-trash c-red" @click="deleteStep(step.id, step.todo_id)"></i>
         </div>
       </li>
     </ul>
@@ -82,14 +83,19 @@
       }
     },
     props: [
-      'steps'
+      'steps',
+      'active'
     ]
   }
 </script>
 
 <style scoped>
   .c-orange {
-    color: #f6993f;
+    color: #cc9e72;
+  }
+
+  .c-red {
+    color: #bb2925;
   }
 </style>
 

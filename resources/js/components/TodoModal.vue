@@ -31,9 +31,16 @@
 					    	<div class="input-group-prepend">
 					    		<div class="input-group-text"><i class="fas fa-user-clock"></i></div>
 					    	</div>
-					    	<date-picker v-model="form.due_date" :config="options"></date-picker>
+					    	<date-picker v-model="form.due_date" 
+					    		:config="options"
+					    		v-mask="'99.99.9999 99:99'">
+					    	</date-picker>
 					    </div>
 				    </div>
+				    <div class="form-group">
+					    <label>Прикрепить файлы</label>
+					    <input type="file" class="form-control-file" multiple @change="attachFiles">
+					  </div>
 				  </div>
 				  <div class="modal-footer">
 					<button type="button" class="btn btn-primary" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
@@ -77,7 +84,7 @@
 					id: '',
 					title: '',
 					task: '',
-					due_date: null
+					due_date: null,
 				})
 			}
 		},
@@ -126,6 +133,7 @@
 	        });
 	      })
 			},
+			
 		},
 		created() {
 			this.form.clear();
@@ -135,7 +143,9 @@
 			if(this.modalData.editMode){
 				this.form.fill(this.modalData.todo);
 				//Переводим из строки в дату для input type=date
-				this.form.due_date = new Date(this.modalData.todo.due_date);
+				if(this.form.due_date){
+					this.form.due_date = new Date(this.modalData.todo.due_date);
+				}
 			}
 		},
 		components: {
