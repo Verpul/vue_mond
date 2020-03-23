@@ -39,7 +39,7 @@
 				    </div>
 				    <div class="form-group">
 					    <label>Прикрепить файлы</label>
-					    <input type="file" class="form-control-file" multiple @change="attachFiles">
+					    <input type="file" class="form-control-file" @change="attachFiles" multiple>
 					  </div>
 				  </div>
 				  <div class="modal-footer">
@@ -85,6 +85,7 @@
 					title: '',
 					task: '',
 					due_date: null,
+					files: []
 				})
 			}
 		},
@@ -133,15 +134,21 @@
 	        });
 	      })
 			},
-			
+			attachFiles(event){
+				let files = event.target.files;
+				for( var i = 0; i < files.length; i++ ){
+          this.form.files.push(files[i].name);
+        }
+			}
 		},
 		created() {
 			this.form.clear();
-      		this.form.reset();
+  		this.form.reset();
 
       		//Если это редактирование - заполняем поля
 			if(this.modalData.editMode){
 				this.form.fill(this.modalData.todo);
+				this.form.files = [];
 				//Переводим из строки в дату для input type=date
 				if(this.form.due_date){
 					this.form.due_date = new Date(this.modalData.todo.due_date);

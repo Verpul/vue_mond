@@ -12,6 +12,10 @@
       <input type="checkbox" class="form-check-input" @change="completedChecked">
       <label class="form-check-label">Показать завершенные</label>
     </div>
+    <div class="form-check mr-3 pr-2 border-right">
+      <input type="checkbox" class="form-check-input" @change="showAllStepsChecked">
+      <label class="form-check-label">Раскрыть подзадачи</label>
+    </div>
     <div>
       <span>Показать</span>
       <select class="form-control form-control-sm" @change="changeLimit">
@@ -38,6 +42,9 @@
       },
       changeLimit(event){
         this.$emit('setLimit', event.target.value);
+      },
+      showAllStepsChecked(){
+        Fire.$emit('changeStepsView');
       }
     },
   }

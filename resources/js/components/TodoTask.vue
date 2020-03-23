@@ -86,7 +86,8 @@
           editMode: false
         },
         showIcons: true,
-        showDueDate: true
+        showDueDate: true,
+        showAllSteps: false
       }
     },
     methods: {
@@ -229,7 +230,16 @@
           return true;
         }
         return false;
-      }
+      },
+      //Раскрывает и скрывает подзадачи у всех задач
+      showAllStepsChange(){
+        this.showStepsId = [];
+        if(this.showAllSteps){
+          this.todos.data.forEach((el) => {
+            this.stepCreated(el.id);
+          })
+        }
+      },
     },
     created(){
       Fire.$on('changeIconsView', () => {
@@ -238,6 +248,17 @@
       Fire.$on('changeDueDateView', () => {
         this.showDueDate = !this.showDueDate;
       });
+      Fire.$on('changeStepsView', () => {
+        this.showAllSteps = !this.showAllSteps;
+        this.showAllStepsChange();
+      });     
+    },
+    watch: {
+      todos(){
+        if(this.showAllSteps){
+          this.showAllStepsChange();
+        }
+      }
     },
     components: {
       'step-modal': TodoStepModal,

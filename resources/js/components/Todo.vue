@@ -85,6 +85,7 @@
             }
           }).then((response) => {
             this.todos = response.data;
+
             loader.hide();
           })
         },
@@ -152,6 +153,6 @@
   }
 </script>
 
-<style>
+<style scoped>
   @import '~admin-lte/plugins/icheck-bootstrap/icheck-bootstrap.min.css';
 </style>

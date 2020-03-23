@@ -5,7 +5,7 @@
       <li v-for="step in steps" :key="step.id">
         <span :style="!step.active ? 'text-decoration: line-through': ''">{{step.step}}</span>
         <div class="tools" v-if="active">
-          <i class="fas fa-times text-danger" v-if="step.active" 
+          <i class="fas fa-check text-dark" v-if="step.active" 
             @click="changeStepStatus(step.id, step.todo_id, false)" ></i>
           <i class="fas fa-check text-success" 
             @click="changeStepStatus(step.id, step.todo_id, true)"
