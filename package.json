@@ -29,6 +29,8 @@
         "bootstrap-table": "^1.16.0",
         "laravel-vue-pagination": "^2.3.1",
         "moment": "^2.24.0",
+        "object-to-formdata": "^3.0.6",
+        "qs": "^6.9.3",
         "vform": "^1.0.1",
         "vue-bootstrap-datetimepicker": "^5.0.1",
         "vue-inputmask": "^0.2.1",

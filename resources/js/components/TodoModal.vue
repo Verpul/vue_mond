@@ -38,15 +38,50 @@
 					    </div>
 				    </div>
 				    <div class="form-group">
-					    <label>Прикрепить файлы</label>
+					    <label class="d-block mb-0">Прикрепить файлы</label>
+					    <small class="text-muted">
+					    	Только файлы следующих типов: .jpg .png .doc .docx .xls .xlsx .pdf
+					    </small>
 					    <input type="file" class="form-control-file" @change="attachFiles" multiple>
+					    <div :class="fileListError ? 'border border-danger is-invalid'
+				    														: 'border border-white'">
+					    <ul class="list-group list-group-flush">
+						  	<li class="list-group-item pt-1 pb-0 pl-1"
+						  		v-for="(file, index) in form.filesData.filesToSave" 
+						  		:key="index"
+						  		:class="checkFileError(index) ? 'text-danger': ''">
+						  		{{file.name}}
+					  			<i class="fas fa-times float-right text-danger" 
+					  				style="cursor: pointer;"
+					  				@click="removeUnsavedFile(index)">
+				  				</i>
+						  	</li>
+						  </ul>
+							</div>
+							<div class="help-block invalid-feedback">
+								Попытка сохранить файлы с запрещенными типами
+							</div>
 					  </div>
+						<div class="form-group mb-0" v-if="form.filesData.uploadedFiles.length !== 0">
+							<hr class="mt-1 mb-1">
+					  	<label>Сохраненные файлы:</label>
+					  	<div class="border border-light">
+							  <ul class="list-group list-group-flush">
+							  	<li class="list-group-item pt-1 pb-0 pl-1 link"
+							  		v-for="(file, index) in form.filesData.uploadedFiles.filenames" 
+							  		:key="index">
+							  		<a href="" @click.prevent="downloadFile(file.name)">- {{file.name}}</a>
+							  	</li>
+							  </ul>
+						  </div>
+						</div>
 				  </div>
 				  <div class="modal-footer">
-					<button type="button" class="btn btn-primary" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
-					<button type="submit" class="btn btn-success" 
-						@click.prevent="modalData.editMode ? editTodo() : createTodo()" 
-						>Сохранить</button>
+						<button type="button" class="btn btn-primary" data-dismiss="modal" @click="$emit('close')">Закрыть</button>
+						<button type="submit" class="btn btn-success" 
+							@click.prevent="modalData.editMode ? editTodo() : createTodo()" 
+							>Сохранить
+						</button>
 				  </div>
 			  </form>
 		  </div>
@@ -58,6 +93,8 @@
 <script>
 	import datePicker from 'vue-bootstrap-datetimepicker';
 	import 'pc-bootstrap4-datetimepicker/build/css/bootstrap-datetimepicker.css';
+	import { objectToFormData } from 'object-to-formdata';
+	import qs from 'qs';
 
 	export default {
 		name: "TodoModal",
@@ -85,19 +122,28 @@
 					title: '',
 					task: '',
 					due_date: null,
-					files: []
-				})
+					filesData: {
+						uploadedFiles: [],
+						filesToSave: []
+					}
+				}),
+				fileListError: false,
 			}
 		},
 		methods: {
 			createTodo(){
+				this.fileListError = false;
 				//Форматируем дату для MySQL
 				if(this.form.due_date !== null){
 					this.form.due_date = this.$moment(this.form.due_date, 'DD.MM.YYYY HH:mm')
 						.format('YYYY/MM/DD HH:mm');
 				};
 
-				this.form.post('/api/todo')
+				this.form.post('/api/todo', {
+					transformRequest: [(data, headers) => {
+						return objectToFormData(data);
+					}]
+				})
 	      .then(() => {
 	        this.$emit('loadTodos');
 	        this.$emit('close');
@@ -109,8 +155,8 @@
 	            timer: 3000,
 	            icon: 'success',
 	            title: 'Новая задача добавлена!'
-	        });
-	      })
+	        })
+	      });
 			},
 			editTodo(){
 				//Форматируем дату для MySQL
@@ -119,7 +165,12 @@
 						.format('YYYY/MM/DD HH:mm');
 				};
 
-				this.form.put('/api/todo/'+this.form.id)
+				this.form.post('/api/todo/'+this.form.id, {
+					transformRequest: [(data, headers) => {
+						data['_method'] = 'PUT';
+						return objectToFormData(data);
+					}]
+				})
 	      .then(() => {
 	        this.$emit('loadTodos');
 	        this.$emit('close');
@@ -136,19 +187,63 @@
 			},
 			attachFiles(event){
 				let files = event.target.files;
+
+				this.form.filesData.filesToSave = [];
+
+				//Очищаем ошибки при загрузке новых файлов
+				this.fileListError = false;
+				for(let err in this.form.errors.errors){
+					if((/filesData/).test(err)){
+						delete this.form.errors.errors[err];
+					}
+				}
+
 				for( var i = 0; i < files.length; i++ ){
-          this.form.files.push(files[i].name);
-        }
+						this.form.filesData.filesToSave.push(files[i]);
+				}
+        
+        event.target.value = null;
+			},
+			//Отображение ошибки в загрузке файлов из-за типа
+			checkFileError(index){
+				if(this.form.errors.has('filesData.filesToSave.'+index)){
+					this.fileListError = true;
+					return true;
+				}
+				return false;
+			},
+			downloadFile(name){
+				let folder = this.form.filesData.uploadedFiles.path;
+				axios.get('api/file/'+folder+'/'+name, {responseType: 'blob'})
+				.then((response) => {
+				  const url = window.URL.createObjectURL(new Blob([response.data]));
+				  const link = document.createElement('a');
+				  link.href = url;
+				  link.setAttribute('download', name);
+				  document.body.appendChild(link);
+				  link.click();
+				});
+			},
+			removeUnsavedFile(index){
+				this.form.filesData.filesToSave.splice(index, 1);
 			}
 		},
 		created() {
 			this.form.clear();
   		this.form.reset();
 
-      		//Если это редактирование - заполняем поля
+      //Если это редактирование - заполняем поля
 			if(this.modalData.editMode){
 				this.form.fill(this.modalData.todo);
-				this.form.files = [];
+				//Если будет null, то push при выборе файлов не сработает
+				this.form.filesData = {
+					uploadedFiles: [],
+					filesToSave: []
+				};
+				//Переводим из JSON в нормальный вид и сохраняем
+				if(this.modalData.todo.files){
+					this.form.filesData.uploadedFiles = JSON.parse(this.modalData.todo.files);
+				}
 				//Переводим из строки в дату для input type=date
 				if(this.form.due_date){
 					this.form.due_date = new Date(this.modalData.todo.due_date);
@@ -163,3 +258,17 @@
 		]
 	}
 </script>
+
+<style scoped>
+	#todoModal {
+		overflow-y:scroll;
+	}
+
+	input[type=file] {
+  	color: transparent;
+	}
+
+	input[type=file]:hover {
+  	color: transparent;
+	}
+</style>

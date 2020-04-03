@@ -70,7 +70,7 @@
           },
           showViewOptions: false,
           viewOptions: {
-            limit: 5,
+            limit: 15,
             showCompleted: false
           }
         }

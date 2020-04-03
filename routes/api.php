@@ -20,6 +20,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::get('employees/params', 'API\EmployeeController@setViewParams');
 Route::apiResource('employees', 'API\EmployeeController');
 
+Route::get('file/{folder}/{name}', 'API\TodoController@downloadFile');
+
 Route::get('todo/step', 'API\TodoController@loadSteps');
 Route::put('todo/step/active/{id}', 'API\TodoController@changeStepStatus');
 Route::delete('todo/step/{id}', 'API\TodoController@deleteStep');
