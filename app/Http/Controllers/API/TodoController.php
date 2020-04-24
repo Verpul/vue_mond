@@ -26,6 +26,7 @@ class TodoController extends Controller
         if(!$showCompleted){
             $data->where('active', true);
         };
+
         return $data->orderByRaw('ISNULL(due_date), due_date ASC')
                     ->paginate($limit);
     }
@@ -42,7 +43,7 @@ class TodoController extends Controller
             'title' => 'required|string|max:150',
             'task' => 'required|string',
             'due_date' => 'date|nullable',
-            'filesData.filesToSave.*' => 'file|mimes:pdf,jpeg,doc,docx,xls,xlsx,png|nullable'
+            'filesData.filesToSave.*' => 'file|mimes:pdf,jpeg,doc,docx,xls,xlsx,png,zip,7z|nullable'
         ]);
 
         $files = []; 
@@ -96,15 +97,33 @@ class TodoController extends Controller
             'due_date' => 'date|nullable',
             'filesData.filesToSave.*' => 'file|mimes:pdf,jpeg,doc,docx,xls,xlsx,png|nullable'
         ]);
-
-        $files = []; 
+        
+        $files = json_decode($todo['files'], true); 
+        //При удалении ранее сохраненных файлов
+        if($request['filesData.uploadedFiles'] && count($files['filenames']) !== 0){
+            $path = $files['path'];
+            //Удаляем всю папку если сохранненных файлов не осталось
+            if(!$request['filesData.uploadedFiles.filenames']){
+                Storage::disk('public')->deleteDirectory($path);
+                $files = [];
+            //Или удаляем не найденные файлы
+            }else{
+                $uploadedFiles = $request['filesData.uploadedFiles.filenames'];
+                foreach($files['filenames'] as $index => $file){
+                    if(array_search($file['name'], array_column($uploadedFiles, 'name')) === false){
+                        Storage::disk('public')->delete($path.'/'.$file['name']);
+                        array_splice($files['filenames'], $index, 1);
+                    };
+                };
+            }   
+        };
+        
+        //Обработка несохраненных файлов
         if($request['filesData.filesToSave']){
-            $files = json_decode($todo['files'], true); 
-
             foreach ($request['filesData.filesToSave'] as $index => $file) {
                 $filename = $file->getClientOriginalName();
 
-                //Добавляем у уже созданному, либо создаем
+                //Добавляем к уже созданному, либо создаем
                 if(!empty($files)){
                     //Существует ли файл с таким именем
                     $filename = $this->checkName($filename, $files['filenames']);
@@ -243,5 +262,29 @@ class TodoController extends Controller
             $this->checkName($filename, $files);
         }
         return $filename;
+    }
+
+    public function deleteFile($id, $name){
+        $todo = Todo::findOrFail($id);
+        $files = json_decode($todo['files'], true); 
+        $path = $files['path'];
+        $storage = Storage::disk('public');
+        if($storage->exists($path.'/'.$name)){     
+            $storage->delete($path.'/'.$name);
+            //Если файлов больше нет то удаляем папку
+            if(count($storage->files($path)) === 0){
+                $storage->deleteDirectory($path);
+                $files = [];
+            }else{
+                //Удаляем файл из массива файлов
+                if(($index = array_search($name, array_column($files['filenames'], 'name'))) !== false){
+                    array_splice($files['filenames'], $index, 1);
+                };
+            }
+        }
+
+        $todo->update([
+            'files' => json_encode($files),
+        ]);
     }
 }

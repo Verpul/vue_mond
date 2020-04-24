@@ -21,6 +21,7 @@ Route::get('employees/params', 'API\EmployeeController@setViewParams');
 Route::apiResource('employees', 'API\EmployeeController');
 
 Route::get('file/{folder}/{name}', 'API\TodoController@downloadFile');
+Route::put('todo/file/{id}/{name}', 'API\TodoController@deleteFile');
 
 Route::get('todo/step', 'API\TodoController@loadSteps');
 Route::put('todo/step/active/{id}', 'API\TodoController@changeStepStatus');

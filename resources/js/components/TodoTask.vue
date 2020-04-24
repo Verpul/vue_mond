@@ -10,9 +10,9 @@
             <i class="fas fa-ellipsis-v"></i>
             <i class="fas fa-ellipsis-v"></i>
           </span>
-          <!-- Show adn hide todo steps -->
+          <!-- Show and hide todo steps -->
           <span style="cursor: pointer" @click="changeStepsVisible(todo.id)" 
-            v-if="todo.steps.length !== 0 && showIcons">
+            v-if="todo.steps.length !== 0 && showIcons || todo.files.length !== 0">
             <i class="text-purple" :class="showSteps(todo.id) ? 
               'fas fa-chevron-circle-down' : 'fas fa-chevron-circle-right'"></i>
           </span>
@@ -32,7 +32,12 @@
           <small class="badge badge-dark" v-if="!todo.active && showIcons">
             <i class="far fa-clock"></i> Завершена 
           </small>
-          <small v-if="showDueDate">{{formatDate(todo.due_date)}}</small> 
+          <small v-if="showDueDate">{{formatDate(todo.due_date)}}</small>
+          <todo-file
+            v-if="showSteps(todo.id) && todo.files"
+            :id="todo.id"
+            :files="todo.files">
+          </todo-file>
         </div>
         <div class="col">
           <!-- todo title -->
@@ -72,6 +77,7 @@
 <script>
   import TodoStepModal from './TodoStepModal';
   import TodoStep from './TodoStep';
+  import TodoFile from './TodoFile';
   import draggable from 'vuedraggable';
 
   export default{
@@ -263,6 +269,7 @@
     components: {
       'step-modal': TodoStepModal,
       'todo-step': TodoStep,
+      'todo-file': TodoFile,
       draggable,
     },
     props: [
