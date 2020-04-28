@@ -2,7 +2,7 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import Employees from './components/Employees';
 import Users from './components/Users';
-import Todo from './components/Todo';
+import Todo from './components/Todo/Todo';
 
 Vue.use(VueRouter);
 
